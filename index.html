@@ -9,6 +9,8 @@ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-siz
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <title>FdS Adesso Vicino</title>
 <meta name="theme-color" content="#0d6c74">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -88,6 +90,15 @@ details.prefs summary span{color:var(--muted);font-weight:400;font-size:.88rem;m
 .dot.me{background:var(--me)} .dot.ev{background:var(--pin);width:22px;height:22px;margin:-11px 0 0 -11px}
 .zoom{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .zoom button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+#lmap{height:68vh;min-height:320px;border:1px solid var(--line);border-radius:12px;z-index:0}
+.leaflet-popup-content{font-family:var(--f-body);font-size:14px;line-height:1.35;margin:10px 12px}
+.pop{color:#14212b}
+.pop small{color:#5b6a75}
+.pop h4{font-family:var(--f-display);font-size:1.02rem;margin:0 0 6px}
+.pop ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.pop li{display:flex;gap:8px;align-items:baseline}
+.pop .tm{font-family:var(--f-mono);font-weight:700;min-width:3.8em}
+.pop button{all:unset;cursor:pointer;color:#0d6c74;font-weight:600;text-decoration:underline}
 .legend{columns:2;column-gap:16px;font-size:.84rem;padding:0;margin:0;list-style:none}
 .legend li{break-inside:avoid;padding:2px 0} .legend b{font-family:var(--f-mono);display:inline-block;min-width:2.2em;color:var(--pin)}
 footer{font-size:.78rem;color:var(--muted)}
@@ -139,13 +150,8 @@ footer{font-size:.78rem;color:var(--muted)}
   </section>
 
   <section id="view-map" hidden style="display:flex;flex-direction:column;gap:10px">
-    <div class="zoom">
-      <button type="button" id="zout" aria-label="Riduci">−</button><button type="button" id="zin" aria-label="Ingrandisci">+</button>
-      <span class="status" id="mapcap">Pallino blu: tu. Pallino rosa: l'evento scelto.</span>
-    </div>
-    <div class="mapbox" id="mapbox"><div class="mapinner" id="mapinner"><svg id="mapsvg" role="img" aria-label="Schema delle sedi nel centro di Genova"></svg></div></div>
-    <ul class="legend" id="legend"></ul>
-    <footer>Schema non in scala esatta: sedi posizionate dalle loro coordinate, nord in alto. Per le indicazioni stradali usa "Portami lì".</footer>
+    <div class="status" id="mapcap">Blu: tu. Rosa: le sedi con eventi nei prossimi minuti. Tocca un pallino per vedere gli eventi.</div>
+    <div id="lmap" role="region" aria-label="Mappa delle sedi con gli eventi in partenza"></div>
   </section>
 
   <footer id="src"></footer>
@@ -301,7 +307,7 @@ function card(x, rt){
   return `<li class="ev"><button type="button" class="head" data-id="${id}" aria-expanded="${isOpen}">
     <div class="t">${tlabel}<small>${tsub}</small></div>
     <div class="body"><h3>${esc(e.t)}</h3>${e.s?`<div class="sub">${esc(e.s)}</div>`:""}
-      <div class="where">${esc(e.l)}${MAPNUM.has(e.l.split(",")[0].trim())?` · schema <b>${MAPNUM.get(e.l.split(",")[0].trim())}</b>`:""}</div>
+      <div class="where">${esc(e.l)}</div>
       <div class="meta">${x.w!=null?`<span class="walk">🚶 ${x.w}' · ${dist}</span>`:`<span class="pill">sede senza coordinate</span>`}${reach}
         <span class="pill">${esc(e.g)}</span>${e.d?`<span class="pill">${esc(e.d)}</span>`:""}${age?`<span class="pill">${esc(age)}</span>`:""}</div>
     </div></button>${e.la!=null?`<div class="quick"><button type="button" data-map="${id}">📍 Sulla mappa</button>${isOpen?"":`<button type="button" data-id-open="${id}">Dettagli</button>`}</div>`:""}${more}</li>`;
@@ -354,56 +360,49 @@ $("#age").addEventListener("change", () => { st.age = $("#age").value; sset("fds
 $("#q").addEventListener("input", () => { st.q = $("#q").value.trim(); render(); });
 
 // ---------- mappa ----------
-let zoom = sget("fds_zoom", 0.5);
-// proiezione semplice sul centro città (le sedi lontane finiscono nell'elenco "fuori schema")
-const BOX = {la0:44.4205, la1:44.4005, lo0:8.9150, lo1:8.9480};
-const KX = Math.cos(44.41*Math.PI/180), MAP_W = 1000;
-const MAP_H = Math.round(MAP_W * (BOX.la0-BOX.la1) / ((BOX.lo1-BOX.lo0)*KX));
-const toPx = (la,lo) => [ (lo-BOX.lo0)/(BOX.lo1-BOX.lo0)*MAP_W, (BOX.la0-la)/(BOX.la0-BOX.la1)*MAP_H ];
-const inBox = p => { const [x,y] = toPx(p[0],p[1]); return x>=0 && y>=0 && x<=MAP_W && y<=MAP_H; };
-const MAPV = VENUES.filter(v=>inBox(v.p)).sort((a,b)=>b.p[0]-a.p[0] || a.p[1]-b.p[1]);
-const MAPNUM = new Map(MAPV.map((v,i)=>[v.n, i+1]));
-(function baseMap(){
-  const svg = $("#mapsvg"); svg.setAttribute("viewBox", `0 0 ${MAP_W} ${MAP_H}`);
-  const m100 = 100 / (6371000*Math.PI/180*(BOX.la0-BOX.la1)) * MAP_H; // pixel per 100 m
-  let g = `<rect width="${MAP_W}" height="${MAP_H}" fill="var(--panel)"/>`;
-  for (let y=m100*2; y<MAP_H; y+=m100*2) g += `<line x1="0" x2="${MAP_W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
-  for (let x=m100*2; x<MAP_W; x+=m100*2) g += `<line y1="0" y2="${MAP_H}" x1="${x}" x2="${x}" stroke="var(--line)" stroke-width="1"/>`;
-  g += `<g transform="translate(${MAP_W-60},50)"><path d="M0,-28 L9,6 L0,0 L-9,6 Z" fill="var(--ink)"/><text y="26" text-anchor="middle" class="vlab">N</text></g>`;
-  g += `<g transform="translate(30,${MAP_H-30})"><line x1="0" x2="${m100*5}" y1="0" y2="0" stroke="var(--ink)" stroke-width="3"/><text x="0" y="-8" class="vlab">500 m</text></g>`;
-  for (const v of MAPV){ const [x,y] = toPx(v.p[0],v.p[1]); const n = MAPNUM.get(v.n);
-    g += `<g data-venue="${esc(v.n)}" style="cursor:pointer"><circle cx="${x}" cy="${y}" r="11" fill="var(--muted)"/><text x="${x}" y="${y+4}" text-anchor="middle" class="vnum">${n}</text></g>`; }
-  svg.innerHTML = g;
-})();
+let lmap = null, layer = null;
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function drawMap(){
-  const inner = $("#mapinner"); inner.style.setProperty("--z", zoom);
-  inner.querySelectorAll(".dot").forEach(d=>d.remove());
-  const put = (p, cls, title) => { if (!inBox(p)) return null; const [x,y] = toPx(p[0],p[1]);
-    const d = document.createElement("div"); d.className = "dot "+cls; d.title = title;
-    d.style.left = (x/MAP_W*100)+"%"; d.style.top = (y/MAP_H*100)+"%"; inner.appendChild(d); return d; };
-  const me = st.here ? put(st.here.p, "me", "Tu") : null;
+  if (!window.L){ $("#mapcap").textContent = "La mappa ha bisogno della connessione internet. Usa \"Portami lì\" negli eventi."; return; }
+  if (!lmap){
+    lmap = L.map("lmap", {zoomControl:true}).setView([44.4095, 8.9300], 15);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(lmap);
+    layer = L.layerGroup().addTo(lmap);
+  }
+  setTimeout(()=>lmap.invalidateSize(), 50);
+  layer.clearLayers();
+  const pin = cssVar("--pin") || "#d01f4f", me = cssVar("--me") || "#1b5fd1";
   const fe = st.focus ? EVENTS.find(e=>e.id===st.focus) : null;
-  const seen = new Set();
-  for (const x of (st.list||[])){ const e = x.e; if (e.la==null || (fe && e.id===fe.id)) continue;
-    const k = e.la.toFixed(5)+","+e.lo.toFixed(5); if (seen.has(k)) continue; seen.add(k);
-    const d = put([e.la,e.lo], "sm", e.t); if (d){ d.dataset.focus = e.id; } }
-  const evd = fe && fe.la!=null ? put([fe.la,fe.lo], "ev", fe.t) : null;
-  const here = (st.list||[]).filter(x=>fe && x.e.la===fe.la && x.e.lo===fe.lo).map(x=>`${x.kind==="open"?"libero":hm(x.start)} ${x.e.t}`);
-  const out = fe && fe.la!=null && !evd ? " (sede fuori dallo schema: usa \"Portami lì\")" : "";
-  $("#mapcap").textContent = fe ? `Evento scelto (pallino grande): ${fe.t} · ${fe.l}${out}${here.length>1?" · nella stessa sede: "+here.filter(h=>!h.endsWith(fe.t)).join("; "):""}. Blu: tu. Pallini rosa piccoli: gli altri eventi dell'elenco. Numeri grigi: le sedi.` : "Blu: tu. Pallini rosa: gli eventi dell'elenco in Adesso. Numeri grigi: le sedi. Tocca un pallino o un numero per sapere cos'è.";
-  const target = evd || me;
-  if (target) requestAnimationFrame(()=>{ const box = $("#mapbox");
-    box.scrollLeft = target.offsetLeft - box.clientWidth/2; box.scrollTop = target.offsetTop - box.clientHeight/2; });
+  const groups = new Map();
+  for (const x of (st.list||[])){ const e = x.e; if (e.la==null) continue;
+    const k = e.l.split(",")[0].trim(); if (!groups.has(k)) groups.set(k, {p:[e.la,e.lo], name:k, items:[]});
+    groups.get(k).items.push(x); }
+  if (fe && fe.la!=null){ const k = fe.l.split(",")[0].trim(); if (!groups.has(k)) groups.set(k, {p:[fe.la,fe.lo], name:fe.l.split(",")[0].trim(), items:[{e:fe, kind:"focus"}]}); }
+  const pts = []; let focusMarker = null;
+  for (const [k,g] of groups){
+    const isF = fe && g.items.some(x=>x.e.id===fe.id);
+    const html = `<div class="pop"><h4>${esc(g.name)}</h4><ul>` + g.items.sort((a,b)=>(a.start??0)-(b.start??0)).map(x=>
+      `<li><span class="tm">${x.kind==="open"?"libero":x.kind==="focus"?"":hm(x.start)}</span><span>${esc(x.e.t)}${x.e.l.includes(",")?` <small>(${esc(x.e.l.split(",").slice(1).join(",").trim())})</small>`:""} · <button type="button" data-open="${x.e.id}">dettagli</button></span></li>`).join("") + `</ul></div>`;
+    const m = L.circleMarker(g.p, {radius: isF?13:9, color:"#fff", weight:3, fillColor:pin, fillOpacity: isF?1:.85}).bindPopup(html, {maxWidth:280});
+    layer.addLayer(m); pts.push(g.p);
+    if (isF) focusMarker = m;
+  }
+  if (st.here){ const m = L.circleMarker(st.here.p, {radius:9, color:"#fff", weight:3, fillColor:me, fillOpacity:1}).bindPopup("<b>Tu</b>: "+esc(st.here.label));
+    layer.addLayer(m); pts.push(st.here.p); }
+  $("#mapcap").textContent = fe ? `Evento scelto: ${fe.t} (pallino grande). Blu: tu. Gli altri pallini rosa sono le sedi con eventi nei prossimi minuti: toccali.`
+    : `Blu: tu. Rosa: ${groups.size} sedi con eventi nei prossimi minuti (con i tuoi filtri). Tocca un pallino per vedere quali.`;
+  setTimeout(()=>{
+    if (focusMarker){ lmap.setView(focusMarker.getLatLng(), 17); focusMarker.openPopup(); }
+    else if (st.here) lmap.setView(st.here.p, 16);
+    else if (pts.length) lmap.setView(pts[0], 16);
+  }, 80);
 }
-$("#mapinner").addEventListener("click", ev => {
-  const d = ev.target.closest("[data-focus]"); if (d){ st.focus = d.dataset.focus; drawMap(); return; }
-  const v = ev.target.closest("[data-venue]"); if (v){ const n = v.dataset.venue;
-    const evs = (st.list||[]).filter(x=>x.e.l.split(",")[0].trim()===n).map(x=>`${x.kind==="open"?"libero":hm(x.start)} ${x.e.t}`);
-    $("#mapcap").textContent = `${MAPNUM.get(n)} · ${n}` + (evs.length ? ` · in elenco: ${evs.join("; ")}` : " · nessun evento in elenco ora"); }
+document.getElementById("lmap").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-open]"); if (!b) return;
+  st.open = b.dataset.open; showTab("now"); render();
+  const card = document.querySelector(`button.head[data-id="${CSS.escape(st.open)}"]`); if (card) card.scrollIntoView({block:"start"});
 });
-$("#zin").onclick = () => { zoom = Math.min(1.2, +(zoom+0.15).toFixed(2)); sset("fds_zoom", zoom); drawMap(); };
-$("#zout").onclick = () => { zoom = Math.max(0.25, +(zoom-0.15).toFixed(2)); sset("fds_zoom", zoom); drawMap(); };
-$("#legend").innerHTML = MAPV.map(v=>`<li><b>${MAPNUM.get(v.n)}</b>${esc(v.n)}</li>`).join("") + VENUES.filter(v=>!inBox(v.p)).map(v=>`<li><b>·</b>${esc(v.n)} (fuori schema)</li>`).join("");
 
 function showTab(t){
   const map = t==="map";

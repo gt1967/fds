@@ -14,7 +14,7 @@ premi un tasto e vedi gli eventi che iniziano **nei prossimi minuti**, ordinati 
 - Filtra per **interessi** (13 aree, da Robotica e IA a Scienze sociali), **età**, **tipo di evento** e parola cercata.
 - Per i laboratori calcola il prossimo turno disponibile.
 - Per ogni evento: orari, relatori, ingresso e prenotazione, temi, indirizzo, "Portami lì" (Google Maps a piedi) e il link alla descrizione completa sul sito ufficiale.
-- Vista **Mappa**: schema delle sedi con la tua posizione e gli eventi in elenco.
+- Vista **Mappa** (OpenStreetMap): la tua posizione e le sedi con eventi nei prossimi minuti; tocca un pallino per vedere gli eventi di quella sede e aprirne i dettagli. La mappa richiede la connessione internet.
 - Le preferenze restano salvate sul telefono; i dati sono inclusi nella pagina, quindi funziona anche con poca rete.
 
 ## Come usarla dal telefono
@@ -50,7 +50,7 @@ All'avvio la pagina prova `./fds/api/search`; se risponde usa i dati in diretta,
 
 ## Licenza e dati
 
-Il **codice** è rilasciato con licenza [MIT](LICENSE).
+Il **codice** è rilasciato con licenza [MIT](LICENSE). La mappa usa [Leaflet](https://leafletjs.com) e i dati © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
 
 I **dati** inclusi nella pagina (titoli, orari, sedi, coordinate, fasce d'età) sono pubblicati
 dall'organizzazione dell'evento e restano di sua titolarità: questo repository non concede
