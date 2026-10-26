@@ -19,17 +19,17 @@ img{max-width:100%}
 /* Layout: app a colonna singola per telefono; barra con due viste (Adesso, Mappa); preferenze richiudibili; elenco ordinato per minuti a piedi */
 :root{
   --bg:#f3f5f6; --panel:#ffffff; --ink:#14212b; --muted:#5b6a75; --line:#d6dde2; --soft:#e8eef1;
-  --accent:#0d6c74; --accent-ink:#ffffff; --ok:#1f7a3d; --warn:#a36200; --late:#b3261e; --pin:#d01f4f; --me:#1b5fd1;
+  --accent:#0d6c74; --accent-ink:#ffffff; --c-conf:#2563c9; --c-lab:#e07418; --c-mostra:#7c4dcc; --c-spett:#c2348a; --c-spec:#a68a00; --c-other:#8a97a0; --ok:#1f7a3d; --warn:#a36200; --late:#b3261e; --pin:#d01f4f; --me:#1b5fd1;
   --f-display:"Archivo Narrow","Arial Narrow",system-ui,sans-serif;
   --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0e1519; --panel:#152026; --ink:#e6edf1; --muted:#97a6b0; --line:#26343c; --soft:#1b2a31;
-  --accent:#4fb9c1; --accent-ink:#06191b; --ok:#5fc983; --warn:#e3a740; --late:#f0857c; --pin:#ff5b86; --me:#6ea4ff; color-scheme:dark}}
+  --accent:#4fb9c1; --accent-ink:#06191b; --c-conf:#6ea0ff; --c-lab:#ff9b4a; --c-mostra:#b08cff; --c-spett:#f07cc0; --c-spec:#e3c63a; --c-other:#97a6b0; --ok:#5fc983; --warn:#e3a740; --late:#f0857c; --pin:#ff5b86; --me:#6ea4ff; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e1519; --panel:#152026; --ink:#e6edf1; --muted:#97a6b0; --line:#26343c; --soft:#1b2a31;
-  --accent:#4fb9c1; --accent-ink:#06191b; --ok:#5fc983; --warn:#e3a740; --late:#f0857c; --pin:#ff5b86; --me:#6ea4ff; color-scheme:dark}
+  --accent:#4fb9c1; --accent-ink:#06191b; --c-conf:#6ea0ff; --c-lab:#ff9b4a; --c-mostra:#b08cff; --c-spett:#f07cc0; --c-spec:#e3c63a; --c-other:#97a6b0; --ok:#5fc983; --warn:#e3a740; --late:#f0857c; --pin:#ff5b86; --me:#6ea4ff; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.4;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
@@ -104,7 +104,7 @@ details.prefs summary span{color:var(--muted);font-weight:400;font-size:.88rem;m
 .seg button[aria-pressed="true"]{background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .quick button.fav[aria-pressed="true"]{color:var(--pin)}
 .quick button.go[aria-pressed="true"]{background:var(--ok);color:var(--panel)}
-.ev.isgo{border-color:var(--ok);box-shadow:inset 4px 0 0 var(--ok)}
+.ev.isgo{border-color:var(--ok);border-top-color:var(--tc,var(--ok));box-shadow:inset 4px 0 0 var(--ok)}
 .whenrow{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);text-transform:none;letter-spacing:0;grid-column:1/-1}
 .whenrow input{width:18px;height:18px;margin:0}
 .photo{margin-top:10px}
@@ -134,6 +134,14 @@ details.prefs summary span{color:var(--muted);font-weight:400;font-size:.88rem;m
 .plan tr.walkrow td{color:var(--muted);font-size:.84rem}
 .plan tr.meal td{color:var(--muted);font-style:italic}
 .plan .warn{color:var(--warn)} .plan .note{font-size:.84rem;color:var(--muted)}
+.t-conf{--tc:var(--c-conf)} .t-lab{--tc:var(--c-lab)} .t-mostra{--tc:var(--c-mostra)} .t-spett{--tc:var(--c-spett)} .t-spec{--tc:var(--c-spec)} .t-other{--tc:var(--c-other)}
+.ev{border-top:5px solid var(--tc,var(--line))}
+.zrow{border-top:4px solid var(--tc,var(--line))}
+.pill.type{color:var(--ink);border-color:var(--tc)}
+.pill.type::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--tc);margin-right:5px;vertical-align:1px}
+.typelegend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted)}
+.typelegend span::before{content:"";display:inline-block;width:14px;height:4px;border-radius:2px;background:var(--tc);margin-right:5px;vertical-align:2px}
+.plan tr.t-conf td:first-child,.plan tr.t-lab td:first-child,.plan tr.t-mostra td:first-child,.plan tr.t-spett td:first-child,.plan tr.t-spec td:first-child{box-shadow:inset 4px 0 0 var(--tc);padding-left:9px}
 .legend{columns:2;column-gap:16px;font-size:.84rem;padding:0;margin:0;list-style:none}
 .legend li{break-inside:avoid;padding:2px 0} .legend b{font-family:var(--f-mono);display:inline-block;min-width:2.2em;color:var(--pin)}
 footer{font-size:.78rem;color:var(--muted)}
@@ -159,6 +167,7 @@ footer{font-size:.78rem;color:var(--muted)}
     <button type="button" data-show="fav">❤️ Preferiti <span id="nfav"></span></button>
     <button type="button" data-show="go">✓ Partecipo <span id="ngo"></span></button>
   </div>
+  <div class="typelegend" aria-label="Colori per tipo di evento"><span class="t-conf">Conferenza</span><span class="t-lab">Laboratorio</span><span class="t-mostra">Mostra</span><span class="t-spett">Spettacolo</span><span class="t-spec">Evento speciale</span></div>
 
   <section id="view-now" style="display:flex;flex-direction:column;gap:12px">
     <button class="big" id="go" type="button">Cosa c'è nei prossimi minuti?</button>
@@ -347,6 +356,8 @@ function prefSummary(){
   $("#prefsum").textContent = p.join(" · ");
 }
 
+const TYPECLS = {"Conferenza":"t-conf","Laboratorio":"t-lab","Mostra":"t-mostra","Spettacolo":"t-spett","Evento speciale":"t-spec"};
+const tcls = g => TYPECLS[g] || "t-other";
 function moreBlock(e){
   const id = e.id;
   const maps = e.la!=null ? `https://www.google.com/maps/dir/?api=1&destination=${e.la},${e.lo}&travelmode=walking` : null;
@@ -380,12 +391,12 @@ function card(x, rt){
   const tsub = x.kind==="open" ? "libero" : x.kind==="slot" ? `turno ${x.every}'` : "→ "+hm(x.end);
   const age = e.tg ? e.tg.replace("20+","adulti").split(",").join(" · ") : "";
   const more = isOpen ? moreBlock(e) : "";
-  return `<li class="ev${st.go[id]?" isgo":""}"><button type="button" class="head" data-id="${id}" aria-expanded="${isOpen}">
+  return `<li class="ev ${tcls(e.g)}${st.go[id]?" isgo":""}"><button type="button" class="head" data-id="${id}" aria-expanded="${isOpen}">
     <div class="t">${tlabel}<small>${tsub}</small></div>
     <div class="body"><h3>${esc(e.t)}</h3>${e.s?`<div class="sub">${esc(e.s)}</div>`:""}
       <div class="where">${esc(e.l)}</div>
       <div class="meta">${x.w!=null?`<span class="walk">🚶 ${x.w}' · ${dist}</span>`:`<span class="pill">sede senza coordinate</span>`}${reach}
-        <span class="pill">${esc(e.g)}</span>${e.d?`<span class="pill">${esc(e.d)}</span>`:""}${age?`<span class="pill">${esc(age)}</span>`:""}</div>
+        <span class="pill type">${esc(e.g)}</span>${e.d?`<span class="pill">${esc(e.d)}</span>`:""}${age?`<span class="pill">${esc(age)}</span>`:""}</div>
     </div></button><div class="quick">
       <button type="button" class="fav" data-fav="${id}" aria-pressed="${st.fav.has(id)}" aria-label="Preferito">${st.fav.has(id)?"❤️":"🤍"}</button>
       <button type="button" class="go" data-go="${id}" data-dd="${rt.dd}" data-start="${x.kind==="open"?"":x.start}" aria-pressed="${!!st.go[id]}">${st.go[id]?"✓ Partecipo":"＋ Partecipo"}</button>
@@ -575,7 +586,7 @@ function renderDay(){
     const walk = g.z.p ? `🚶 ${walkMin(g.d)}' da ${esc(from.n)}` : "";
     return `<section class="zone"><h3>${esc(g.z.name)}</h3><div class="zsub">${walk}${venues.length>1||g.z.name.startsWith("Zona")?" · "+venues.map(esc).join(", "):""}</div>` +
       g.items.map(({e,ranges})=>{ const L = sessionsLabel(e, ranges), open = st.open===e.id;
-        return `<div class="zrow${st.go[e.id]?" isgo":""}"><button type="button" class="zh" data-zopen="${e.id}" aria-expanded="${open}">
+        return `<div class="zrow ${tcls(e.g)}${st.go[e.id]?" isgo":""}"><button type="button" class="zh" data-zopen="${e.id}" aria-expanded="${open}">
           <div class="zt">${L.t}<small>${L.sub}</small></div>
           <div><b>${esc(e.t)}</b><div class="zs">${esc(e.g)} · ${esc(vname(e))}${room(e)?", "+esc(room(e)):""}${e.tg?" · "+esc(e.tg.replace("20+","adulti").split(",").join(" · ")):""}</div></div></button>
           <div class="quick"><button type="button" class="fav" data-fav="${e.id}" aria-pressed="${st.fav.has(e.id)}" aria-label="Preferito">${st.fav.has(e.id)?"❤️":"🤍"}</button>
@@ -677,7 +688,7 @@ function renderPlan(){
   const ev = P.rows.filter(r=>r.e);
   const tr = P.rows.map(r => r.free ? `<tr class="walkrow"><td>${hm(r.start)}–${hm(r.end)}</td><td>Tempo libero (${r.end-r.start}')</td></tr>` : r.walk ? `<tr class="walkrow"><td>${hm(r.start)}</td><td>🚶 ${r.walk}' a piedi verso ${esc(r.to)}</td></tr>`
     : r.meal ? `<tr class="meal"><td>${hm(r.start)}–${hm(r.end)}</td><td>${r.meal} · zona ${esc(r.where)}</td></tr>`
-    : `<tr><td>${hm(r.start)}–${hm(r.end)}</td><td><b>${esc(r.e.t)}</b><br><span class="note">${esc(r.e.g)} · ${esc(r.e.l)}${r.late?` · <span class="warn">arrivi ${r.late}' dopo l'inizio</span>`:""}</span></td></tr>`).join("");
+    : `<tr class="${tcls(r.e.g)}"><td>${hm(r.start)}–${hm(r.end)}</td><td><b>${esc(r.e.t)}</b><br><span class="note">${esc(r.e.g)} · ${esc(r.e.l)}${r.late?` · <span class="warn">arrivi ${r.late}' dopo l'inizio</span>`:""}</span></td></tr>`).join("");
   $("#planout").innerHTML = `<div class="plan"><h3>Percorso proposto · ${esc(dayLabel(dd))}</h3>
     <div class="note">${ev.length} eventi · partenza da ${esc(from.n)} · durate stimate dove il programma non le indica (laboratori ${LAB_DEF}', mostre ${MOSTRA_DEF}', conferenze ${CONF_DEF}')</div>
     <table>${tr}</table>
