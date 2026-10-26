@@ -142,6 +142,14 @@ details.prefs summary span{color:var(--muted);font-weight:400;font-size:.88rem;m
 .typelegend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted)}
 .typelegend span::before{content:"";display:inline-block;width:14px;height:4px;border-radius:2px;background:var(--tc);margin-right:5px;vertical-align:2px}
 .plan tr.t-conf td:first-child,.plan tr.t-lab td:first-child,.plan tr.t-mostra td:first-child,.plan tr.t-spett td:first-child,.plan tr.t-spec td:first-child{box-shadow:inset 4px 0 0 var(--tc);padding-left:9px}
+.sharebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sharebar button,.importbox button{font:inherit;font-size:.9rem;font-weight:600;color:var(--accent);background:var(--soft);border:0;border-radius:8px;padding:7px 11px;cursor:pointer}
+.sharebar input{font:inherit;font-size:.85rem;width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.importbox{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.importbox h3{margin:0;font-family:var(--f-display);font-size:1.15rem}
+.importbox ul{margin:0;padding-left:18px;font-size:.9rem;max-height:30vh;overflow:auto}
+.importbox .row{display:flex;flex-wrap:wrap;gap:8px}
+.importbox button.primary{background:var(--accent);color:var(--accent-ink)}
 .legend{columns:2;column-gap:16px;font-size:.84rem;padding:0;margin:0;list-style:none}
 .legend li{break-inside:avoid;padding:2px 0} .legend b{font-family:var(--f-mono);display:inline-block;min-width:2.2em;color:var(--pin)}
 footer{font-size:.78rem;color:var(--muted)}
@@ -168,6 +176,8 @@ footer{font-size:.78rem;color:var(--muted)}
     <button type="button" data-show="go">✓ Partecipo <span id="ngo"></span></button>
   </div>
   <div class="typelegend" aria-label="Colori per tipo di evento"><span class="t-conf">Conferenza</span><span class="t-lab">Laboratorio</span><span class="t-mostra">Mostra</span><span class="t-spett">Spettacolo</span><span class="t-spec">Evento speciale</span></div>
+  <div class="sharebar"><button type="button" id="share">🔗 Condividi i miei eventi</button><span class="status" id="sharemsg" aria-live="polite"></span></div>
+  <div class="importbox" id="importbox" hidden></div>
 
   <section id="view-now" style="display:flex;flex-direction:column;gap:12px">
     <button class="big" id="go" type="button">Cosa c'è nei prossimi minuti?</button>
@@ -736,9 +746,55 @@ async function goLive(){
   }catch(e){ clearTimeout(t); }
 }
 
+// ---------- condivisione preferiti / partecipazioni via link ----------
+// formato: #i=f<id>,<id>;g<id>-<DDMM>-<min>,...   (min vuoto = accesso libero)
+function shareCode(){
+  const f = [...st.fav].join(","), g = Object.entries(st.go).map(([id,v]) => `${id}-${v.dd}-${v.start ?? ""}`).join(",");
+  return `f${f};g${g}`;
+}
+function parseCode(c){
+  const out = {fav:[], go:{}}; const ids = new Set(EVENTS.map(e=>e.id));
+  for (const part of String(c).split(";")){
+    if (part[0]==="f") for (const id of part.slice(1).split(",")) if (ids.has(id)) out.fav.push(id);
+    if (part[0]==="g") for (const it of part.slice(1).split(",")){ const [id,dd,m] = it.split("-"); if (ids.has(id) && /^\d{4}$/.test(dd)) out.go[id] = {dd, start: m==="" || m==null ? null : +m}; }
+  }
+  return out;
+}
+$("#share").addEventListener("click", async () => {
+  const nf = st.fav.size, ng = Object.keys(st.go).length;
+  if (!nf && !ng){ $("#sharemsg").textContent = "Prima metti qualche ❤️ o ✓ Partecipo."; return; }
+  const url = location.origin + location.pathname + "#i=" + shareCode();
+  const text = `I miei eventi FdS 2026: ${nf} preferiti e ${ng} a cui partecipo. Aprilo per importarli:`;
+  if (navigator.share){ try{ await navigator.share({title:"FdS Adesso Vicino", text, url}); $("#sharemsg").textContent = "Link condiviso."; return; }catch(e){ if (e && e.name==="AbortError") return; } }
+  try{ await navigator.clipboard.writeText(url); $("#sharemsg").textContent = "Link copiato: incollalo su WhatsApp o in un messaggio."; }
+  catch(e){ $("#sharemsg").innerHTML = `Copia questo link: <input id="shareurl" readonly value="${esc(url)}">`; const i = $("#shareurl"); i.focus(); i.select(); }
+});
+function checkImport(){
+  const m = location.hash.match(/^#i=(.*)$/); if (!m) return;
+  const data = parseCode(decodeURIComponent(m[1]));
+  try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){}
+  const nf = data.fav.length, ng = Object.keys(data.go).length;
+  const box = $("#importbox");
+  if (!nf && !ng){ box.hidden = false; box.innerHTML = `<h3>Link non valido</h3><div>Il link non contiene eventi riconosciuti.</div><div class="row"><button type="button" data-imp="close">Chiudi</button></div>`; box.onclick = ev => { if (ev.target.closest("[data-imp]")){ box.hidden = true; box.innerHTML = ""; } }; return; }
+  const name = id => (EVENTS.find(e=>e.id===id)||{}).t || id;
+  const goList = Object.entries(data.go).map(([id,v]) => `<li>✓ ${esc(name(id))} · ${esc(dayLabel(v.dd))}${v.start!=null?" "+hm(v.start):""}</li>`).join("");
+  const favList = data.fav.filter(id=>!data.go[id]).map(id => `<li>❤️ ${esc(name(id))}</li>`).join("");
+  box.hidden = false;
+  box.innerHTML = `<h3>Eventi ricevuti</h3><div>${nf} preferiti e ${ng} a cui partecipare.</div><ul>${goList}${favList}</ul>
+    <div class="row"><button type="button" class="primary" data-imp="add">Aggiungi ai miei</button><button type="button" data-imp="replace">Sostituisci i miei</button><button type="button" data-imp="close">Annulla</button></div>`;
+  box.onclick = ev => {
+    const b = ev.target.closest("[data-imp]"); if (!b) return;
+    if (b.dataset.imp === "replace"){ st.fav = new Set(); st.go = {}; }
+    if (b.dataset.imp !== "close"){ data.fav.forEach(id=>st.fav.add(id)); Object.assign(st.go, data.go); saveFav(); saveGo();
+      $("#sharemsg").textContent = b.dataset.imp==="replace" ? "Eventi sostituiti con quelli ricevuti." : "Eventi ricevuti aggiunti ai tuoi."; }
+    box.hidden = true; box.innerHTML = ""; render(); if (TAB==="day") renderDay();
+  };
+}
+window.addEventListener("hashchange", checkImport);
+
 // ---------- avvio ----------
 $("#src").textContent = "Dati: orari e sedi pubblicati dall'organizzazione dell'evento ("+SOURCE+"); turni dei laboratori dal programma stampato. Tempi a piedi stimati: distanza in linea d'aria × 1,35 a 4,5 km/h.";
-setVenue(whereSel.value); render();
+setVenue(whereSel.value); render(); checkImport();
 if (location.protocol.startsWith("http") && !/claude|anthropic|claudeusercontent/.test(location.hostname)) goLive();
 </script>
 
