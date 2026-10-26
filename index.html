@@ -696,7 +696,7 @@ function makePlan(dd, from, mode){
   let t = (!mine && dd===n.dd && n.min > toMin("10:00")) ? Math.ceil(n.min/5)*5 : toMin("10:00");
   const pool = mine ? EVENTS.filter(e => e.S[dd] && st.go[e.id] && st.go[e.id].dd === dd) : EVENTS.filter(e => e.S[dd] && st.fav.has(e.id));
   const fixed = [], flex = [], nopos = [];
-  const durAt = (e, s) => { for (const [a,b] of e.S[dd]) if (a===s && isStart(e,a,b)) return b>a && b-a<=180 ? b-a : CONF_DEF;
+  const durAt = (e, s) => { for (const [a,b] of e.S[dd]) if (a===s && isStart(e,a,b)) return e.g==="Evento speciale" && b-a>90 ? 60 : (b>a && b-a<=180 ? b-a : CONF_DEF);
     return e.tu ? e.tu[1] : (e.g==="Mostra" ? MOSTRA_DEF : START_TYPES.has(e.g) ? CONF_DEF : LAB_DEF); };
   if (mine){
     for (const e of pool){
@@ -708,7 +708,7 @@ function makePlan(dd, from, mode){
   }
   for (const e of (mine ? [] : pool)){
     for (const [a,b] of e.S[dd]){
-      if (isStart(e,a,b) && e.la!=null){ const dur = b>a && b-a<=180 ? b-a : CONF_DEF; fixed.push({e, start:a, end:a+dur}); }
+      if (isStart(e,a,b) && e.la!=null){ const dur = e.g==="Evento speciale" && b-a>90 ? 60 : (b>a && b-a<=180 ? b-a : CONF_DEF); fixed.push({e, start:a, end:a+dur}); }
     }
     if (e.la==null){ nopos.push(e); continue; }
     if (!e.S[dd].some(([a,b])=>isStart(e,a,b))) flex.push({e, ranges:e.S[dd]});
