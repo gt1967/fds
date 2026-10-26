@@ -15,7 +15,12 @@ premi un tasto e vedi gli eventi che iniziano **nei prossimi minuti**, ordinati 
 - Per i laboratori calcola il prossimo turno disponibile.
 - Per ogni evento: orari, relatori, ingresso e prenotazione, temi, indirizzo, "Portami lì" (Google Maps a piedi) e il link alla descrizione completa sul sito ufficiale.
 - Vista **Mappa** (OpenStreetMap): la tua posizione e le sedi con eventi nei prossimi minuti; tocca un pallino per vedere gli eventi di quella sede e aprirne i dettagli. La mappa richiede la connessione internet.
-- Le preferenze restano salvate sul telefono; i dati sono inclusi nella pagina, quindi funziona anche con poca rete.
+- **❤️ Preferiti** e **✓ Partecipo**: un tocco su ogni evento; in alto scegli se vedere Tutti, solo i Preferiti o solo quelli a cui partecipi.
+- **Quando**: di ora in ora; di default solo da adesso in poi, con la casella per mostrare anche giorni e orari passati.
+- Scheda **Programma**: tutti gli eventi di un giorno raggruppati per zona (sedi vicine insieme), ordinate per distanza dal punto di partenza.
+- **🧭 Crea percorso**: dai preferiti del giorno costruisce un percorso a piedi in ordine di orario, con turni dei laboratori, spostamenti, pranzo, cena, tempi liberi ed eventi esclusi (con il motivo); un tocco li segna tutti come "Partecipo".
+- Nei dettagli di un evento: foto (caricata dal sito ufficiale) e, se la pagina ha l'inoltro descritto sotto, la descrizione completa.
+- Le preferenze, i preferiti e le partecipazioni restano salvati sul telefono; i dati sono inclusi nella pagina, quindi funziona anche con poca rete.
 
 ## Come usarla dal telefono
 
@@ -40,7 +45,7 @@ location /fds/ {
 }
 ```
 
-All'avvio la pagina prova `./fds/api/search`; se risponde usa i dati in diretta, altrimenti la copia inclusa.
+All'avvio la pagina prova `./fds/api/search`; se risponde usa i dati in diretta, altrimenti la copia inclusa. Con l'inoltro attivo, aprendo i dettagli di un evento la pagina mostra anche la descrizione completa letta dal sito ufficiale (non è copiata nel repository).
 
 ## Note
 
